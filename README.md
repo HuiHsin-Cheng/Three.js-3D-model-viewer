@@ -54,7 +54,7 @@ The [Autodesk Forge](https://www.npmjs.com/package/forge-apis) packages is inclu
 
 # Tips & tricks
 
-For local development/testing, consider use [nodemon](https://www.npmjs.com/package/nodemon) package, which auto restart your node application after any modification on your code. To install it, use:
+For local development/testing, consider use [nodemon](https://www.npmjs.com/package/nodemon) package, which auto restart your node application after any modification on your code. To install it, use :
 
     sudo npm install -g nodemon
 
