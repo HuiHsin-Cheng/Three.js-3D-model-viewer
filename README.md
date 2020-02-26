@@ -1,3 +1,6 @@
+Demo:
+
+![image](https://github.com/HuiHsin-Cheng/ARCore-application/blob/master/01.gif)
 # forge.tutorial.viewmodels.nodejs
 
 [![Node.js](https://img.shields.io/badge/Node.js-4.4.3-blue.svg)](https://nodejs.org/)
