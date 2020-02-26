@@ -1,6 +1,6 @@
 Demo:
 
-![image](https://github.com/HuiHsin-Cheng/Three.js-3D-model-viewer/blob/master/demo.gif)
+![image](https://github.com/HuiHsin-Cheng/Three.js-3D-model-viewer/blob/master/demo.gif?raw=true)
 
 # forge.tutorial.viewmodels.nodejs
 
