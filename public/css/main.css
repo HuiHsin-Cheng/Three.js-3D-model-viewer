@@ -1,0 +1,50 @@
+﻿html, body{
+  min-height: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 20px 20px;  
+  background: #fafafa;
+  position: relative;
+}
+
+.fill{
+  height: calc(100vh - 100px);
+}
+
+body {
+  padding-top: 60px; /* space for the top nav bar */
+  margin-right: 30px;   
+}
+
+#appBuckets {
+  overflow: auto;
+  width: 100%;
+  height: calc(100vh - 150px);
+}
+
+#forgeViewer {
+  width: 100%;
+}
+
+.mdl-data-table {
+  margin-bottom: 12px;
+}
+
+.mdl-data-table td {
+  padding-bottom: 12px;
+  vertical-align: middle;
+}
+
+.mdl-data-table_full {
+  max-width: 100%;
+  width: 100%;
+}
+
+.mdl-data-table .controls {
+  text-align: center;
+}
+
+.app-page {  
+  margin: 0 auto;
+}
+

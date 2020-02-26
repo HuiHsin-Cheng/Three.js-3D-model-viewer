@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <!-- <script src="libs/three.js"></script> -->
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/94/three.min.js"></script>
+
+        <script src="libs/OBJLoader.js"></script>
+        <script src="libs/MTLLoader.js"></script>
+        <script src="libs/OrbitControls.js"></script>
+        <script src="libs/Stats.min.js"></script>
+        <script src="libs/dat.gui.min.js"></script>
+
+        
+        <script type="text/javascript">
+            var scene = null;
+            var camera = null;
+            var renderer = null;
+            
+            var mesh = null;
+            var id = null;
+            var box=null;
+            var clipping=null;
+
+            //var detectid="5cbe96f0e96f030024b14957"; 
+            var detectmodelLocation='';
+            var detecttextureLocation='';
+            var detectPNGLocation=[];
+            var detectPNG_Name=[];
+            var Mtl_matNameArray=[];
+            var Mtl_kdmapArray=[];
+            var test = window.location.search;
+            
+            if (test.indexOf("?") != -1) {  //判斷網址中是否有夾帶參數////
+                var str = test.substr(1); //從第一個字元開始 第0個是? 獲取所有?後的字元
+                strs = str.split("=");  //用等號進行分隔
+                console.log(strs[1]);     //顯示第一個參數
+                var detectid=strs[1];
+            }
+
+            var request = new XMLHttpRequest();
+            //request.open('GET', `https://arteachingmaterial.herokuapp.com/api/ar/arMaterials?fbclid=IwAR2nc9EjzSyEuXSXist9WmmBshwMp8T5L9A4K0NUEfnQJKNQRSma6yoGToc`, true);
+            request.open('GET', `https://ar.keshufang.com/api/ar/arMaterials`, true);
+
+            request.onload = function() {
+                
+                if (request.status >= 200 && request.status < 400) {
+  
+                var str=request.responseText;
+                var jsonarray=strToJson(str);
+                //var a=eval(request.responseText); 
+                
+                for (var i=0; i<jsonarray.length; i++)
+                        {
+                            if(jsonarray[i]["_id"]==detectid) {
+                                detecttextureLocation=(jsonarray[i]["textureLocation"]);
+                                detectmodelLocation=(jsonarray[i]["modelLocation"]);
+                                detectPNGLocation=(jsonarray[i]["PNG_locations"])
+                                detectPNG_Name=(jsonarray[i]["PNG_names"])
+                                //detectPNGLocation=["http://ar.keshufang.com/uploads/1566351401547.dangqiang.jpg", "http://ar.keshufang.com/uploads/1566351404208.gt.jpg", "http://ar.keshufang.com/uploads/1566351425192.gt1.jpg"]
+                                
+                                console.log(detectmodelLocation);
+                                console.log("detectPNGLocation: ",detectPNGLocation,"size:",detectPNGLocation.length);
+                                
+                                init();
+                                break
+                            }
+                            
+                        };
+                }
+            };
+            request.send();
+                console.log(request);
+
+            //轉換string為json
+            function strToJson(str){ 
+                var json = eval('(' + str + ')'); 
+                return json; 
+                }
+
+            function init() {
+                renderer = new THREE.WebGLRenderer({//渲染器              
+                    canvas: document.getElementById('mainCanvas')//画布
+                }); 
+                renderer.setClearColor(0xFFFFFF, 1.0);//画布颜色
+                renderer.setSize(window.innerWidth, window.innerHeight) // 場景大小
+                scene = new THREE.Scene();//创建场景
+                
+                //正交投影照相机
+                //camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 1, 1000);/////
+                camera = new THREE.PerspectiveCamera( 45, 2048/2048, 0.1, 1e8 );
+                camera.position.set(40,30,40);//相机位置
+                camera.lookAt(new THREE.Vector3(0, 0, 0));//lookAt()设置相机所看的位置
+                scene.add(camera);//把相机添加到场景中
+
+                
+                 //加载mtl文件
+                 var mtlLoader = new THREE.MTLLoader();
+ 
+                //在init函数中，创建loader变量，用于导入模型
+                var loader = new THREE.OBJLoader();
+                //loader.setMaterials(material);   
+                
+                var PNGloader = new THREE.TextureLoader();
+                setTimeout(function(){
+                            
+                //loader.load('https://s3.ap-southeast-1.amazonaws.com/ar.materials/1555994348354.Bathroom.obj', function(obj) {//第一个表示模型路径，第二个表示完成导入后的回调函数，一般我们需要在这个回调函数中将导入的模型添加到场景中
+                mtlLoader.load(detecttextureLocation, function (material) {   
+                loader.setMaterials(material); 
+
+                //get material name from mtl
+               
+              
+                console.log("mtl material",material);  
+                console.log("mtl material",material.getAsArray());      
+                for(var i=0;i<material.getAsArray().length;i++){
+                    Mtl_matNameArray[i]=material.getAsArray()[i].name ;
+                }
+                console.log("Mtl_matNameArray",Mtl_matNameArray);
+            
+                //get material map_kd from mtl
+                for(var i=0;i<material.getAsArray().length;i++){
+               
+                //console.log("material name: ",material.materialsInfo) 
+                //console.log("Mtl_matNameArray: ",Mtl_matNameArray[i]) 
+                var json = material.materialsInfo[Mtl_matNameArray[i]]
+                //console.log("json: ",json);
+                Mtl_kdmapArray[i] = json.map_kd
+                }
+                console.log("Mtl_kdmapArray",Mtl_kdmapArray);
+             
+                
+
+                loader.load((detectmodelLocation), function(obj) {
+                        obj.scale.set(1,1,1);
+                        console.log("obj : ",obj);
+
+                
+
+                obj.position.set(0,0,0);
+                //obj.rotateX(-Math.PI/2);      
+                scene.add(obj);//将导入的模型添加到场景中
+                mesh = obj;//储存到全局变量中
+
+
+                //控制模型旋轉
+                var box = new THREE.Box3().setFromObject( obj );
+                box.center( obj.position ); // this re-sets the mesh position
+                obj.position.multiplyScalar( - 1 );
+
+                var pivot = new THREE.Group();
+                scene.add( pivot );
+                pivot.add( obj );
+                console.log("detectPNG_Name: ",detectPNG_Name);
+                        obj.traverse(function(child) { 
+                        if (child instanceof THREE.Mesh) 
+                        { 
+                            child.material.side = THREE.DoubleSide; 
+                            var name=child.material.name
+                            console.log("child.material: ",child.material);
+                            console.log("current name: ",name);
+                            if (child.material.length>1){
+                                for (var name_idx=0;name_idx<child.material.length;name_idx++){
+                                    var new_name=child.material[name_idx].name
+                                    console.log("current name: ",new_name);
+                                    for(var i=0;i<Mtl_matNameArray.length;i++){
+                                    if (new_name==Mtl_matNameArray[i]){
+                                        for(var idx=0;idx<detectPNG_Name.length;idx++){
+                                            if (Mtl_kdmapArray[i]==detectPNG_Name[idx]){
+                                                
+                                                child.material[name_idx].map=PNGloader.load(detectPNGLocation[idx]);
+                                                child.material[name_idx].needsUpdate = true;
+                                                console.log("idx in Mtl_kdmapArray: ",idx)
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                            else{
+                                for(var i=0;i<Mtl_matNameArray.length;i++){
+                                    if (name==Mtl_matNameArray[i]){
+                                        for(var idx=0;idx<detectPNG_Name.length;idx++){
+                                            if (Mtl_kdmapArray[i]==detectPNG_Name[idx]){
+                                                child.material.map=PNGloader.load(detectPNGLocation[idx]);
+                                                child.material.needsUpdate = true;
+                                                console.log("idx in Mtl_kdmapArray: ",idx)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // if (name=="dang1"){
+                            //     child.material.map=PNGloader.load(detectPNGLocation[0]);
+                            //     child.material.needsUpdate = true;
+                            // } else if (name=="tu1"){
+                            //     child.material.map=PNGloader.load(detectPNGLocation[1]);
+                            //     child.material.needsUpdate = true;
+                            // } else if (name=="tu2"){
+                            //     child.material.map=PNGloader.load(detectPNGLocation[2]);
+                            //     child.material.needsUpdate = true;
+                            // } else if (name=="tu3"){
+                            //     child.material.map=PNGloader.load(detectPNGLocation[1]);
+                            //     child.material.needsUpdate = true;
+                            // } else{
+                            //     console.log("somthing wrong");
+                            // }
+                            //for(var i=0;i<detectPNGLocation.length;i++){
+                                //child.material.map = THREE.ImageUtils.loadTexture(detectPNGLocation[i]);
+                                //console.log("detectPNGLocation[",i,"]: ",detectPNGLocation[i]);
+                                //child.material.map =PNGloader.load(detectPNGLocation[i]); 
+                                
+                                //console.log("child.material.map: ", child.material.map)
+                                //console.log("child.material: ", child.material)
+                                //console.log("child: ", child)
+                                //child.material.needsUpdate = true; 
+
+                                // var loadedtex = {}
+                                // var textureloaded = 0
+                                // var to_load = detectPNGLocation
+                                // var texture_loader = new THREE.TextureLoader();   
+                                // load_textures = function(){
+                                //     if (textureloaded == to_load.length){return}
+                                //     var texture = to_load[textureloaded]
+                                //     texture_loader.load(texture,function(tex){
+                                //         loadedtex[texture] = tex
+                                //         textureloaded += 1
+                                //         load_textures()
+                                //     })  
+                                // }
+                                // load_textures()
+
+                            //} 
+                        }
+                        
+                        });
+                });    
+             
+                var globalPlanes = [ globalPlaneX , globalPlaneY, globalPlaneZ ],
+                Empty = Object.freeze( [] );
+                renderer.clippingPlanes = Empty; // GUI sets it to globalPlanes
+                renderer.localClippingEnabled = true; 
+
+                let cameraControl = new THREE.OrbitControls(camera,renderer.domElement)
+                cameraControl.enablePan = false;//平移關掉
+
+                cameraControl.target.set( 0, 1, 0 );
+                cameraControl.update();
+                //gui
+                var gui = new dat.GUI(),
+                    folderGlobal = gui.addFolder( '剖切' ),
+                    propsGlobal = {
+                        get '开启'() {
+                            return renderer.clippingPlanes !== Empty;
+                        },
+                        set '开启'( v ) {
+                            renderer.clippingPlanes = v ? globalPlanes : Empty;
+                        },
+                        get 'X'() {
+                            return globalPlaneX.constant;
+                        },
+                        set 'X'( v ) {
+                            globalPlaneX.constant = v;
+                        },
+                        get 'Y'() {
+                            return globalPlaneY.constant;
+                        },
+                        set 'Y'( v ) {
+                            globalPlaneY.constant = v;
+                        },
+                        get 'Z'() {
+                            return globalPlaneZ.constant;
+                        }, 
+                        set 'Z'( v ) {
+                            globalPlaneZ.constant = v;
+                        }
+                    };
+
+                    folderGlobal.add( propsGlobal, '开启' );
+                    folderGlobal.add( propsGlobal, 'X', -100, 201 ); 
+                    folderGlobal.add( propsGlobal, 'Y', -200, 400 );
+                    folderGlobal.add( propsGlobal, 'Z', -200, 400 );
+                    gui.domElement.style = 'float: left;margin-top: 35%;top:10%;width:30%';
+                })
+                }
+
+                , 2000 );
+                var light1 = new THREE.DirectionalLight(0xffffff);//光源颜色
+                var light2 = new THREE.DirectionalLight(0xffffff);
+                var light3 = new THREE.DirectionalLight(0xffffff);
+                var light4 = new THREE.DirectionalLight(0xffffff);
+                var light5 = new THREE.DirectionalLight(0xffffff);
+                var light6 = new THREE.DirectionalLight(0xffffff);
+                //var light7 = new THREE.DirectionalLight(0xffffff);
+                //var light8 = new THREE.DirectionalLight(0xffffff);
+                
+                light1.position.set(80, 0, 0);//光源位置
+                light2.position.set(-80, 0, 0);
+                light3.position.set(0, 80, 0);
+                light4.position.set(0, -80, 0);
+                light5.position.set(0, 0, 80);
+                light6.position.set(0, 0, -80);
+                //light7.position.set(-40, 20, 10);               
+                //light8.position.set(40, -20, -10);
+            
+                scene.add(light1);//光源添加到场景中
+                scene.add(light2);  
+                scene.add(light3);    
+                scene.add(light4);    
+                scene.add(light5); 
+                scene.add(light6); 
+                //scene.add(light7); 
+                //scene.add(light8);    
+                 
+                //renderer.render(scene, camera);         
+                id = setInterval(draw, 2);//每隔2s重绘一次
+
+
+                ////增加剖切功能clipping plane
+                //var localPlane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 1 );
+                var globalPlaneX = new THREE.Plane( new THREE.Vector3( 1, 0, 0 ), 600 );  
+                var globalPlaneY = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 600 ); 
+                var globalPlaneZ = new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 600 );                
+              
+                //renderer.clippingPlanes = [ localPlane ]; //切面
+
+                var material = new THREE.MeshPhongMaterial( {
+                clippingPlanes: [ globalPlaneX , globalPlaneY, globalPlaneZ ],
+                clipShadows: true
+            }
+             );  
+                        
+        }
+            function draw() {//在重绘函数中让模型旋转：
+                renderer.render(scene, camera);//调用WebGLRenderer的render函数刷新场景
+            }
+
+            // setTimeout(function(){ 
+            //     document.querySelector("body > div > div").style.width = "20%"
+            //     document.querySelector("body > div > div > div.close-button").style.width = "20%"
+            //  }, 3000);
+
+        </script>
+    </head>
+    
+    <body>
+        <canvas id="mainCanvas" style="width: 100%;height: 100%;" ></canvas>
+    </body>
+</html>
